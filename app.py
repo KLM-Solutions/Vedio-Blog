@@ -9,8 +9,7 @@ import tempfile
 from openai import OpenAI
 
 
-# Load environment variables
-load_dotenv()
+
 
 # Initialize OpenAI client with Streamlit secrets
 try:
