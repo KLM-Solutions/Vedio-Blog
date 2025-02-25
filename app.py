@@ -7,9 +7,20 @@ import os
 from pathlib import Path
 import tempfile
 from openai import OpenAI
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Initialize OpenAI client with Streamlit secrets
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+try:
+    client = OpenAI(
+        api_key=st.secrets["OPENAI_API_KEY"],
+        base_url="https://api.openai.com/v1"  # Explicitly set the base URL
+    )
+except Exception as e:
+    st.error(f"Error initializing OpenAI client: {str(e)}")
+    client = None
 
 def extract_audio(video_path, output_path=None):
     """
