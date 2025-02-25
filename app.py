@@ -8,8 +8,15 @@ from pathlib import Path
 import tempfile
 from openai import OpenAI
 
-# Initialize OpenAI client with Streamlit secrets
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# Set up session state for API key
+if 'api_key' not in st.session_state:
+    st.session_state.api_key = ""
+
+# Try to get API key from secrets, but provide alternative if not available
+try:
+    default_api_key = st.secrets["OPENAI_API_KEY"]
+except Exception:
+    default_api_key = ""
 
 def extract_audio(video_path, output_path=None):
     """
@@ -58,7 +65,7 @@ def extract_audio(video_path, output_path=None):
         except:
             pass
 
-def transcribe_audio(audio_path):
+def transcribe_audio(audio_path, client):
     """
     Transcribe audio file to text using OpenAI's Whisper-1 API
     """
@@ -73,7 +80,7 @@ def transcribe_audio(audio_path):
         st.error(f"Error transcribing audio: {str(e)}")
         raise
 
-def generate_blog(transcript):
+def generate_blog(transcript, client):
     """
     Generate a blog post from the transcript using GPT
     """
@@ -109,6 +116,20 @@ def generate_blog(transcript):
 def main():
     st.title("Video to Blog Generator")
     st.write("Upload a video file to generate a blog post")
+    
+    # API key input
+    api_key_input = st.text_input(
+        "OpenAI API Key", 
+        value=st.session_state.api_key or default_api_key,
+        type="password",
+        help="Enter your OpenAI API key. This is required for transcription and blog generation."
+    )
+    
+    # Update session state
+    st.session_state.api_key = api_key_input
+    
+    # Initialize OpenAI client with the provided API key
+    client = OpenAI(api_key=st.session_state.api_key)
 
     # File uploader
     uploaded_file = st.file_uploader("Choose a video file", type=['mp4', 'avi', 'mov', 'mkv'])
@@ -120,6 +141,10 @@ def main():
             video_path = tmp_file.name
 
         if st.button("Generate Blog"):
+            # Validate API key is provided
+            if not st.session_state.api_key:
+                st.error("Please enter your OpenAI API key to continue.")
+                return
             try:
                 # Step 1: Extract Audio
                 with st.spinner("Extracting audio..."):
@@ -129,7 +154,7 @@ def main():
 
                 # Step 2: Transcribe Audio
                 with st.spinner("Transcribing audio..."):
-                    transcript = transcribe_audio(audio_file)
+                    transcript = transcribe_audio(audio_file, client)
                     st.success("Audio transcribed successfully!")
                     
                     # Show transcript in expander
@@ -138,7 +163,7 @@ def main():
 
                 # Step 3: Generate Blog
                 with st.spinner("Generating blog post..."):
-                    blog_content = generate_blog(transcript)
+                    blog_content = generate_blog(transcript, client)
                     st.success("Blog post generated successfully!")
 
                 # Display blog content
