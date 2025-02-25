@@ -8,20 +8,8 @@ from pathlib import Path
 import tempfile
 from openai import OpenAI
 
-# Set page configuration
-st.set_page_config(
-    page_title="Video to Blog Generator",
-    page_icon="🎬",
-    layout="wide"
-)
-
-# Initialize OpenAI client with API key from secrets
-client = None
-try:
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-except Exception as e:
-    st.error("API key not found in secrets. Please contact the administrator.")
-    st.stop()
+# Initialize OpenAI client with Streamlit secrets
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def extract_audio(video_path, output_path=None):
     """
@@ -121,9 +109,6 @@ def generate_blog(transcript):
 def main():
     st.title("Video to Blog Generator")
     st.write("Upload a video file to generate a blog post")
-    
-    # File uploader
-    uploaded_file = st.file_uploader("Choose a video file", type=['mp4', 'avi', 'mov', 'mkv'])
 
     # File uploader
     uploaded_file = st.file_uploader("Choose a video file", type=['mp4', 'avi', 'mov', 'mkv'])
