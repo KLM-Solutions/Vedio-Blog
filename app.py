@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 from openai import OpenAI
-from dotenv import load_dotenv
+
 
 # Load environment variables
 load_dotenv()
