@@ -9,6 +9,7 @@ import tempfile
 from openai import OpenAI
 
 
+
 # Initialize OpenAI client with Streamlit secrets
 try:
     client = OpenAI(
@@ -23,6 +24,8 @@ def extract_audio(video_path, output_path=None):
     """
     Extract audio from a video file and save it as MP3.
     """
+    video = None
+    audio = None
     try:
         video_path = Path(video_path)
         
@@ -37,14 +40,21 @@ def extract_audio(video_path, output_path=None):
         # Add debug information
         st.write(f"Processing video: {video_path}")
         st.write(f"Output path: {output_path}")
-            
-        # Load the video file with verbose output
-        video = VideoFileClip(str(video_path))
         
-        if video is None:
-            raise ValueError("Failed to load video file")
+        # Ensure the video file is readable
+        if not os.access(str(video_path), os.R_OK):
+            raise PermissionError(f"Cannot read video file: {video_path}")
             
-        if video.audio is None:
+        # Load the video file with explicit error checking
+        try:
+            video = VideoFileClip(str(video_path), audio=True)  # Explicitly request audio
+        except Exception as e:
+            raise ValueError(f"Failed to load video file: {e}")
+            
+        if video is None:
+            raise ValueError("Video failed to load")
+            
+        if not hasattr(video, 'audio') or video.audio is None:
             raise ValueError("Video has no audio track")
             
         # Extract audio
@@ -52,18 +62,24 @@ def extract_audio(video_path, output_path=None):
         
         # Write audio to file with verbose output
         st.write("Extracting audio...")
-        audio.write_audiofile(str(output_path))
+        audio.write_audiofile(str(output_path), verbose=False, logger=None)
         st.write("Audio extraction complete!")
-        
-        # Cleanup
-        audio.close()
-        video.close()
         
         return str(output_path)
         
     except Exception as e:
         st.error(f"Error in extract_audio: {str(e)}")
         raise
+        
+    finally:
+        # Cleanup resources
+        try:
+            if audio is not None:
+                audio.close()
+            if video is not None:
+                video.close()
+        except Exception as e:
+            st.warning(f"Error during cleanup: {e}")
 
 def transcribe_audio(audio_path):
     """
